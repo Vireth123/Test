@@ -1,36 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Public Message Board</title>
+  <title>Live Chat</title>
+  <link href="style.css" rel="stylesheet">
 </head>
 <body>
-<h1>Leave a Message</h1>
-<form id="messageForm">
-  <input type="text" id="message" placeholder="Your message here">
+<h1>💬 Public Chat</h1>
+<div id="messages"></div>
+<form id="chatForm">
+  <input type="text" id="message" placeholder="Type your message...">
   <button type="submit">Send</button>
 </form>
-<div id="messages"></div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
-  document.getElementById("messageForm").onsubmit = async (e) => {
+  const socket = io();
+
+  document.getElementById("chatForm").onsubmit = (e) => {
     e.preventDefault();
-    let message = document.getElementById("message").value;
-    await fetch("/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
-    });
+    let msg = document.getElementById("message").value;
+    socket.emit("message", msg);
     document.getElementById("message").value = "";
-    loadMessages();
   };
 
-  async function loadMessages() {
-    let res = await fetch("/messages");
-    let data = await res.json();
-    document.getElementById("messages").innerHTML = data.map(m => `<p>${m}</p>`).join("");
-  }
-  
-  loadMessages();
+  socket.on("message", (msg) => {
+    let div = document.createElement("div");
+    div.textContent = msg;
+    document.getElementById("messages").appendChild(div);
+  });
 </script>
 </body>
 </html>
