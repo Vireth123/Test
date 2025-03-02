@@ -1,26 +1,25 @@
 const express = require("express");
 const fs = require("fs");
+const http = require("http");
+const socketIO = require("socket.io");
+
 const app = express();
-const PORT = 3000;
+const server = http.createServer(app);
+const io = socketIO(server);
+const PORT = process.env.PORT || 3000;
 
 app.use(express.static("public"));
-app.use(express.json());
 
-app.post("/save", (req, res) => {
-  let message = req.body.message;
-  fs.appendFileSync("./data/messages.txt", message + "\n");
-  res.send({ status: "ok" });
-});
+io.on("connection", (socket) => {
+  console.log("New user connected");
 
-app.get("/messages", (req, res) => {
   let messages = fs.readFileSync("./data/messages.txt", "utf-8").split("\n").filter(m => m);
-  res.json(messages);
+  messages.forEach((msg) => socket.emit("message", msg));
+
+  socket.on("message", (msg) => {
+    fs.appendFileSync("./data/messages.txt", msg + "\n");
+    io.emit("message", msg);
+  });
 });
 
-app.get("/view-file", (req, res) => {
-  let messages = fs.readFileSync("./data/messages.txt", "utf-8");
-  res.send(`<pre>${messages}</pre>`); // Shows file content in browser
-});
-
-
-app.listen(PORT, () => console.log(`Running at http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Chat live at http://localhost:${PORT}`));
