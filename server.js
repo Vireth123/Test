@@ -48,7 +48,7 @@ app.post('/register', (req, res) => {
 });
 
 // Route to handle login
-app.post('/login', (req, res) => {
+app.post('/login.html', (req, res) => {
   const { username, password } = req.body;
 
   // Read existing users
