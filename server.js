@@ -17,4 +17,10 @@ app.get("/messages", (req, res) => {
   res.json(messages);
 });
 
+app.get("/view-file", (req, res) => {
+  let messages = fs.readFileSync("./data/messages.txt", "utf-8");
+  res.send(`<pre>${messages}</pre>`); // Shows file content in browser
+});
+
+
 app.listen(PORT, () => console.log(`Running at http://localhost:${PORT}`));
