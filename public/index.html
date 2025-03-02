@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Public Message Board</title>
+</head>
+<body>
+<h1>Leave a Message</h1>
+<form id="messageForm">
+  <input type="text" id="message" placeholder="Your message here">
+  <button type="submit">Send</button>
+</form>
+<div id="messages"></div>
+
+<script>
+  document.getElementById("messageForm").onsubmit = async (e) => {
+    e.preventDefault();
+    let message = document.getElementById("message").value;
+    await fetch("/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    });
+    document.getElementById("message").value = "";
+    loadMessages();
+  };
+
+  async function loadMessages() {
+    let res = await fetch("/messages");
+    let data = await res.json();
+    document.getElementById("messages").innerHTML = data.map(m => `<p>${m}</p>`).join("");
+  }
+  
+  loadMessages();
+</script>
+</body>
+</html>
