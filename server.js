@@ -1,41 +1,70 @@
-const express = require("express");
-const http = require("http");
-const socketIO = require("socket.io");
-const axios = require("axios");
+const express = require('express');
+const fs = require('fs');
+const bodyParser = require('body-parser');
+const path = require('path');
 
+// Initialize Express app
 const app = express();
-const server = http.createServer(app);
-const io = socketIO(server);
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
-const JSON_BIN_API = "https://api.jsonbin.io/v3/b/";
-const BIN_ID = "67c49e06e41b4d34e49f8514"; // Replace with your actual Bin ID
-const SECRET_KEY = "YOUR_API_KEY"; // Replace with your actual API Key
+// Middleware to parse JSON and URL encoded data
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-app.use(express.static("public"));
+// Serve static files (HTML files)
+app.use(express.static(path.join(__dirname, 'public')));
 
-io.on("connection", async (socket) => {
-    console.log("User connected");
+// Helper function to read users from the JSON file
+const readUsersFromFile = () => {
+  const data = fs.readFileSync('users.json', 'utf8');
+  return JSON.parse(data || '[]');
+};
 
-    // Get existing messages from JSON Bin and send to new user
-    let { data } = await axios.get(`${JSON_BIN_API}${BIN_ID}`, {
-        headers: { "X-Master-Key": SECRET_KEY },
-    });
+// Helper function to save users to the JSON file
+const saveUsersToFile = (users) => {
+  fs.writeFileSync('users.json', JSON.stringify(users, null, 2));
+};
 
-    data.record.forEach((msg) => socket.emit("message", msg));
+// Route to handle registration
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
 
-    // Listen for new messages from users
-    socket.on("message", async (msg) => {
-        data.record.push(msg);
+  // Read existing users
+  const users = readUsersFromFile();
 
-        // Save the new message to JSON Bin
-        await axios.put(`${JSON_BIN_API}${BIN_ID}`, { record: data.record }, {
-            headers: { "X-Master-Key": SECRET_KEY },
-        });
+  // Check if the username already exists
+  const existingUser = users.find(user => user.username === username);
+  if (existingUser) {
+    return res.status(400).send('Username already exists!');
+  }
 
-        // Broadcast the message to all connected clients
-        io.emit("message", msg);
-    });
+  // Add the new user to the list
+  users.push({ username, password });
+
+  // Save the updated users to the file
+  saveUsersToFile(users);
+
+  res.send('Registration successful!');
 });
 
-server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Route to handle login
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  // Read existing users
+  const users = readUsersFromFile();
+
+  // Find the user
+  const user = users.find(user => user.username === username && user.password === password);
+
+  if (!user) {
+    return res.status(401).send('Invalid credentials!');
+  }
+
+  res.send('Login successful!');
+});
+
+// Start the server
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
