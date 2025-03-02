@@ -12,26 +12,20 @@ const JSON_BIN_API = "https://api.jsonbin.io/v3/b/"; // Free storage
 const BIN_ID = "67c49e06e41b4d34e49f8514"; // Your Bin ID
 const SECRET_KEY = "YOUR_API_KEY"; // Your API key
 
-app.use(express.static("public"));
+app.use(express.static("public")); // Serve static files from public folder
 
-// New route to show messages
-app.get("/messages", async (req, res) => {
+// Serve the messages.html file when visiting /messages
+app.get("/messages", (req, res) => {
+  res.sendFile(__dirname + "/public/messages.html");
+});
+
+// New API route to fetch messages
+app.get("/api/messages", async (req, res) => {
   try {
-    // Get the messages from JSON Bin
     let { data } = await axios.get(`${JSON_BIN_API}${BIN_ID}`, {
       headers: { "X-Master-Key": SECRET_KEY },
     });
-
-    // Generate a simple HTML page to display the messages
-    let messagesHtml = `
-    <head>
-    <link rel="stylesheet" type="text/css" href="/style.css">
-  </head>
-  <h1>Chat Messages</h1><ul>`;
-
-    
-    // Send the HTML response
-    res.send(messagesHtml);
+    res.json(data); // Send JSON response with messages
   } catch (error) {
     res.status(500).send("Error retrieving messages.");
   }
